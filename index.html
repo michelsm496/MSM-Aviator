@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MDM Aviator ULTRA</title>
+<title>MSM Aviator IA</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
@@ -40,6 +40,7 @@ margin-top:20px;
 canvas{
 background:white;
 margin-top:20px;
+max-width:95%;
 }
 
 </style>
@@ -47,7 +48,7 @@ margin-top:20px;
 
 <body>
 
-<h1>MDM AVIATOR ULTRA</h1>
+<h1>MSM AVIATOR IA</h1>
 
 <p>Cole resultados ou envie print</p>
 
@@ -59,7 +60,7 @@ margin-top:20px;
 
 <br>
 
-<button onclick="analisar()">ANALISAR</button>
+<button onclick="analisar()">ANALISAR COM IA</button>
 
 <div id="status"></div>
 
@@ -82,26 +83,51 @@ return
 
 let valores=numeros.map(Number)
 
-let baixos=valores.filter(v=>v<2).length
-let prob=(baixos/valores.length)*100
+// limitar a 300 rodadas
+if(valores.length>300){
+valores=valores.slice(valores.length-300)
+}
+
+let crashes=valores.filter(v=>v<2).length
+let verdes=valores.filter(v=>v>=2).length
+
+let crashRate=crashes/valores.length
+let greenRate=verdes/valores.length
+
+// detectar sequência atual
+let seqCrash=0
+for(let i=valores.length-1;i>=0;i--){
+if(valores[i]<2){
+seqCrash++
+}else{
+break
+}
+}
+
+// modelo simples de probabilidade
+let probBase=greenRate
+let ajusteSeq=seqCrash*0.05
+let prob=probBase+ajusteSeq
+
+if(prob>1) prob=1
 
 let status=""
 
-if(prob>70){
+if(prob>0.65){
 status="🟢 ENTRAR"
 tocarAlerta()
 }
-
-else if(prob>55){
+else if(prob>0.55){
 status="🟡 PREPARAR"
 }
-
 else{
 status="🔴 AGUARDAR"
 }
 
 document.getElementById("status").innerHTML=
-status+"<br>Probabilidade aproximada: "+prob.toFixed(0)+"%"
+status+
+"<br>Probabilidade estimada: "+(prob*100).toFixed(0)+"%"+
+"<br>Sequência atual de crashes: "+seqCrash
 
 gerarGrafico(valores)
 
@@ -119,10 +145,16 @@ chart=new Chart(ctx,{
 type:'line',
 data:{
 labels:valores.map((v,i)=>i+1),
-datasets:[{
+datasets:[
+{
 label:'Multiplicadores',
 data:valores
-}]
+},
+{
+label:'Linha 2x',
+data:valores.map(v=>2)
+}
+]
 }
 })
 
@@ -131,7 +163,6 @@ data:valores
 function tocarAlerta(){
 
 let audio=new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
-
 audio.play()
 
 }
