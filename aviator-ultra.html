@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MDM Aviator ULTRA</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
+
+<style>
+body{
+background:#0f172a;
+color:white;
+font-family:Arial;
+text-align:center;
+padding:20px;
+}
+
+textarea{
+width:90%;
+height:120px;
+font-size:16px;
+}
+
+button{
+margin:10px;
+padding:12px;
+font-size:16px;
+border:none;
+border-radius:8px;
+background:#22c55e;
+color:white;
+}
+
+#status{
+font-size:30px;
+margin-top:20px;
+}
+
+canvas{
+background:white;
+margin-top:20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>MDM AVIATOR ULTRA</h1>
+
+<p>Cole resultados ou envie print</p>
+
+<textarea id="dados"></textarea>
+
+<br>
+
+<input type="file" id="imageInput">
+
+<br>
+
+<button onclick="analisar()">ANALISAR</button>
+
+<div id="status"></div>
+
+<canvas id="grafico"></canvas>
+
+<script>
+
+let chart
+
+function analisar(){
+
+let texto=document.getElementById("dados").value
+
+let numeros=texto.match(/\d+(\.\d+)?/g)
+
+if(!numeros){
+document.getElementById("status").innerHTML="INSIRA RESULTADOS"
+return
+}
+
+let valores=numeros.map(Number)
+
+let baixos=valores.filter(v=>v<2).length
+let prob=(baixos/valores.length)*100
+
+let status=""
+
+if(prob>70){
+status="🟢 ENTRAR"
+tocarAlerta()
+}
+
+else if(prob>55){
+status="🟡 PREPARAR"
+}
+
+else{
+status="🔴 AGUARDAR"
+}
+
+document.getElementById("status").innerHTML=
+status+"<br>Probabilidade aproximada: "+prob.toFixed(0)+"%"
+
+gerarGrafico(valores)
+
+}
+
+function gerarGrafico(valores){
+
+let ctx=document.getElementById('grafico')
+
+if(chart){
+chart.destroy()
+}
+
+chart=new Chart(ctx,{
+type:'line',
+data:{
+labels:valores.map((v,i)=>i+1),
+datasets:[{
+label:'Multiplicadores',
+data:valores
+}]
+}
+})
+
+}
+
+function tocarAlerta(){
+
+let audio=new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
+
+audio.play()
+
+}
+
+document.getElementById('imageInput').addEventListener('change',function(){
+
+let file=this.files[0]
+
+Tesseract.recognize(file,'eng').then(({data:{text}})=>{
+
+document.getElementById("dados").value=text
+
+})
+
+})
+
+</script>
+
+</body>
+</html>
